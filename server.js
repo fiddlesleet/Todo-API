@@ -1,6 +1,12 @@
 var express = require('express');
+var bodyParser = require('body-parser');
 var app = express();
 var PORT = process.env.PORT || 3000;
+var todoNextId = 1;
+
+// middleware
+app.use(bodyParser.json());
+
 var todos = [{
   id: 1,
   description: "Write R Shiny App",
@@ -42,6 +48,15 @@ app.get('/todos/:id', function(req, res) {
   } else {
     res.status(404).send();
   }
+});
+
+// POST /todos
+app.post('/todos', function(req, res) {
+  var body = req.body;
+  // add id field
+  body.id = todoNextId++;
+  todos.push(body);
+  res.json(body);
 });
 
 app.listen(PORT, function() {

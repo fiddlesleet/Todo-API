@@ -1,6 +1,7 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var _ = require('underscore');
+var db = require('./db.js');
 
 var app = express();
 var PORT = process.env.PORT || 3000;
@@ -22,8 +23,6 @@ var todos = [{
   description: "Add Bootstrap 4 formatting to Heroku App",
   completed: false
 }
-
-
 ];
 
 app.get('/', function(req, res) {
@@ -72,18 +71,23 @@ app.post('/todos', function(req, res) {
   // use _.pick to restrict submitted fields to only description and completed
   var body = _.pick(req.body, 'description', 'completed');
 
-  // validate body field entries
-  if (!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
-    return res.status(400); // req can't be completed bc bad data was provided
-  }
-
-  // remove unnecessary spaces from body field
-  body.description = body.description.trim();
-
-  // add id field
-  body.id = todoNextId++;
-  todos.push(body);
-  res.json(body);
+  db.todo.create(body).then(function (todo) {
+    res.json(todo.toJSON());
+  }, function (e) {
+    res.status(400).json(e);
+  });
+  // // validate body field entries
+  // if (!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
+  //   return res.status(400); // req can't be completed bc bad data was provided
+  // }
+  //
+  // // remove unnecessary spaces from body field
+  // body.description = body.description.trim();
+  //
+  // // add id field
+  // body.id = todoNextId++;
+  // todos.push(body);
+  // res.json(body);
 });
 
 // DELETE /todos/:id
@@ -127,6 +131,8 @@ app.put('/todos/:id', function(req, res) {
   res.json(matchedTodo);
 });
 
-app.listen(PORT, function() {
-  console.log("Express listening on port " + PORT + "!");
+db.sequelize.sync().then(function () {
+  app.listen(PORT, function() {
+    console.log("Express listening on port " + PORT + "!");
+  });
 });
